@@ -36,6 +36,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
 
     // 마스터 서버 접속 성공시 자동 실행
     public override void OnConnectedToMaster() {
+        PhotonNetwork.JoinLobby();
         // 룸 접속 버튼을 활성화
         joinButton.interactable = true;
         makeRoomButton.interactable = true;
@@ -54,7 +55,11 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
         // 마스터 서버로의 재접속 시도
         PhotonNetwork.ConnectUsingSettings();
     }
+    public override void OnJoinedLobby()
+    {
 
+        Debug.Log("enter");
+    }
     // 룸 접속 시도
     public void Connect() {
         // 중복 접속 시도를 막기 위해, 접속 버튼 잠시 비활성화
@@ -86,7 +91,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
         // 접속 상태 표시
         connectionInfoText.text = "빈 방이 없음, 새로운 방 생성...";
         // 최대 4명을 수용 가능한 빈방을 생성
-        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 4 });
+        OnClickCreateRoom();
     }
 
     // 룸에 참가 완료된 경우 자동 실행
@@ -126,6 +131,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
     }
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
+        print("tlqkf");
         // 삭제된 RoomItem 프리팹을 저장할 임시변수
         GameObject tempRoom = null;
         
