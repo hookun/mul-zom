@@ -1,6 +1,8 @@
 ﻿using System;
 using Photon.Pun;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 생명체로서 동작할 게임 오브젝트들을 위한 뼈대를 제공
 // 체력, 데미지 받아들이기, 사망 기능, 사망 이벤트를 제공
@@ -9,13 +11,15 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
     public float health { get; protected set; } // 현재 체력
     public bool dead { get; protected set; } // 사망 상태
     public event Action onDeath; // 사망시 발동할 이벤트
-
+    public int kill;
+    public Text textKillCounter;
 
     // 호스트->모든 클라이언트 방향으로 체력과 사망 상태를 동기화 하는 메서드
     [PunRPC]
     public void ApplyUpdatedHealth(float newHealth, bool newDead) {
         health = newHealth;
         dead = newDead;
+        
     }
 
     // 생명체가 활성화될때 상태를 리셋
@@ -29,27 +33,55 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
     // 데미지 처리
     // 호스트에서 먼저 단독 실행되고, 호스트를 통해 다른 클라이언트들에서 일괄 실행됨
     [PunRPC]
-    public virtual void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal) {
+    public virtual void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal, int shooterID) {
         if (PhotonNetwork.IsMasterClient)
         {
             // 데미지만큼 체력 감소
             health -= damage;
-
+            
             // 호스트에서 클라이언트로 동기화
             photonView.RPC("ApplyUpdatedHealth", RpcTarget.Others, health, dead);
 
             // 다른 클라이언트들도 OnDamage를 실행하도록 함
-            photonView.RPC("OnDamage", RpcTarget.Others, damage, hitPoint, hitNormal);
+            photonView.RPC("OnDamage", RpcTarget.Others, damage, hitPoint, hitNormal,shooterID);
+            
         }
 
         // 체력이 0 이하 && 아직 죽지 않았다면 사망 처리 실행
         if (health <= 0 && !dead)
         {
-            Die();
+            PhotonView shooterPhotonView = PhotonView.Find(shooterID);
+            if (shooterPhotonView != null)
+            {
+                
+                saveKillcount(shooterID-1);
+                
+                }
+                Die();
         }
     }
 
-
+    void saveKillcount(int shooterID)
+    {
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        foreach(GameObject player in players)
+        {   
+            int phothon_id = player.GetComponent<PhotonView>().ViewID;
+            if(phothon_id == shooterID)
+            {
+                player.GetComponent<LivingEntity>().incKillcount(shooterID);
+                break;
+            }
+        }
+    }
+    void incKillcount(int shooterID)
+    {
+        PhotonView shooterPhotonView = PhotonView.Find(shooterID);
+        ++kill;
+        textKillCounter.text = kill.ToString();
+        ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable { { "score", kill } };
+        PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
+    }
     // 체력을 회복하는 기능
     [PunRPC]
     public virtual void RestoreHealth(float newHealth) {

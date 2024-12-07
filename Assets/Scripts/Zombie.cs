@@ -135,7 +135,7 @@ public class Zombie : LivingEntity {
 
     // 데미지를 입었을때 실행할 처리
     [PunRPC]
-    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal) {
+    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal, int shooterID) {
         // 아직 사망하지 않은 경우에만 피격 효과 재생
         if (!dead)
         {
@@ -149,7 +149,7 @@ public class Zombie : LivingEntity {
         }
 
         // LivingEntity의 OnDamage()를 실행하여 데미지 적용
-        base.OnDamage(damage, hitPoint, hitNormal);
+        base.OnDamage(damage, hitPoint, hitNormal, shooterID);
     }
 
     // 사망 처리
@@ -201,7 +201,7 @@ public class Zombie : LivingEntity {
                 Vector3 hitNormal = transform.position - other.transform.position;
 
                 // 공격 실행
-                attackTarget.OnDamage(damage, hitPoint, hitNormal);
+                attackTarget.OnDamage(damage, hitPoint, hitNormal, -1);
             }
         }
     }

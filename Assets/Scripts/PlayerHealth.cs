@@ -33,6 +33,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
         {
             // 네트워크를 통해 score 값을 보내기
             stream.SendNext(health);
+            stream.SendNext(kill);
         }
         else
         {
@@ -40,11 +41,13 @@ public class PlayerHealth : LivingEntity,IPunObservable {
 
             // 네트워크를 통해 score 값 받기
             health = (float)stream.ReceiveNext();
+            kill = (int)stream.ReceiveNext();//kill추가
             // 동기화하여 받은 점수를 UI로 표시
 
             //체력 UI 동기화
             healthSlider.value = health;
             healthText.text = health.ToString();
+            textKillCounter.text = kill.ToString();//kill추가
         }
     }
     protected override void OnEnable() {
@@ -77,8 +80,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
 
     // 데미지 처리
     [PunRPC]
-    public override void OnDamage(float damage, Vector3 hitPoint,
-        Vector3 hitDirection) {
+    public override void OnDamage(float damage, Vector3 hitPoint,Vector3 hitDirection, int shooterID) {
         if (!dead)
         {
             // 사망하지 않은 경우에만 효과음을 재생
@@ -86,7 +88,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
         }
 
         // LivingEntity의 OnDamage() 실행(데미지 적용)
-        base.OnDamage(damage, hitPoint, hitDirection);
+        base.OnDamage(damage, hitPoint, hitDirection, shooterID);
         // 갱신된 체력을 체력 슬라이더에 반영
         healthSlider.value = health;
         healthText.text = health.ToString();

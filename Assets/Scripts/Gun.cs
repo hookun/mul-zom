@@ -23,7 +23,7 @@ public class Gun : MonoBehaviourPun, IPunObservable {
     private AudioSource gunAudioPlayer; // 총 소리 재생기
     
     public GunData gunData; // 총의 현재 데이터
-    
+    public string whoshoot;
     private float fireDistance = 50f; // 사정거리
 
     public int ammoRemain = 100; // 남은 전체 탄약
@@ -135,7 +135,8 @@ public class Gun : MonoBehaviourPun, IPunObservable {
             if (target != null)
             {
                 // 상대방의 OnDamage 함수를 실행시켜서 상대방에게 데미지 주기
-                target.OnDamage(gunData.damage, hit.point, hit.normal);
+                target.OnDamage(gunData.damage, hit.point, hit.normal,photonView.ViewID);
+                print("aa"+photonView.Owner.NickName);
             }
 
             // 레이가 충돌한 위치 저장
@@ -150,12 +151,16 @@ public class Gun : MonoBehaviourPun, IPunObservable {
         }
 
         // 발사 이펙트 재생, 이펙트 재생은 모든 클라이언트들에서 실행
-        photonView.RPC("ShotEffectProcessOnClients", RpcTarget.All, hitPosition);
+        photonView.RPC("ShotEffectProcessOnClients", RpcTarget.All, hitPosition, photonView.ViewID);
     }
 
     // 이펙트 재생 코루틴을 랩핑하는 메서드
     [PunRPC]
-    private void ShotEffectProcessOnClients(Vector3 hitPosition) {
+    private void ShotEffectProcessOnClients(Vector3 hitPosition, int shooterID) {
+        PhotonView shooterPhotonView = PhotonView.Find(shooterID); 
+        if (shooterPhotonView != null) { 
+            Debug.Log("Shot fired by: " + shooterPhotonView.Owner.NickName); 
+        }
         StartCoroutine(ShotEffect(hitPosition));
     }
 

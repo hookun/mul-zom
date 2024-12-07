@@ -1,4 +1,5 @@
-﻿using Photon.Pun;
+﻿using ExitGames.Client.Photon;
+using Photon.Pun;
 using Photon.Realtime;
 using System.Collections;
 using UnityEngine;
@@ -51,11 +52,12 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             UIManager.instance.UpdateScoreText(score);
         }
     }
+    
 
 
     private void Awake() {
         // 씬에 싱글톤 오브젝트가 된 다른 GameManager 오브젝트가 있다면
-        
+        CustomSerializationHelper.RegisterCustomTypes();
         if (instance != this)
         {
             // 자신을 파괴
@@ -70,16 +72,20 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         Vector3 randomSpawnPos = Random.insideUnitSphere * 5f;
         // 위치 y값은 0으로 변경
         randomSpawnPos.y = 0f;
-        
+
         // 네트워크 상의 모든 클라이언트들에서 생성 실행
         // 단, 해당 게임 오브젝트의 주도권은, 생성 메서드를 직접 실행한 클라이언트에게 있음
-        PhotonNetwork.Instantiate(playerPrefab.name, randomSpawnPos, Quaternion.identity);
+        GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, randomSpawnPos, Quaternion.identity);
+
         string msg = "\n<color=#00ff00>[" + PhotonNetwork.NickName + "] Connected" + "</color>";
         photonView.RPC("LogMsg", RpcTarget.AllBuffered, msg);
+
         FindWhoAmI();
+
         yield return new WaitForSeconds(1.0f);
+       
     }
-    public void FindWhoAmI()
+    public void FindWhoAmI()//플레이어 이름 설정용
     {
         GameObject[] ppl = FindObjectsOfType<GameObject>();
         for(int i=0;i<ppl.Length;i++) { 
@@ -174,4 +180,6 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
     {
         txtLogMsg.text = txtLogMsg.text + msg;
     }
+
+    
 }

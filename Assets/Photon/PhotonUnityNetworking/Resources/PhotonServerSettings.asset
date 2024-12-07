@@ -48,6 +48,9 @@ MonoBehaviour:
   - ShotProcessOnServer
   - ChatRPC
   - LogMsg
+  - SetPlayerColor
+  - RequestSyncPlayerColor
+  - SyncColorForNewPlayer
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
