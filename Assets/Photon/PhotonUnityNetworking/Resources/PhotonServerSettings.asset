@@ -51,6 +51,13 @@ MonoBehaviour:
   - SetPlayerColor
   - RequestSyncPlayerColor
   - SyncColorForNewPlayer
+  - ShowTimer
+  - EndGame
+  - RestartTime
+  - Restart
+  - ResetGameoverState
+  - fuckyouDie
+  - SyncEndGameFlag
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

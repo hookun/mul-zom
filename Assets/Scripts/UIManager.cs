@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.SceneManagement; // 씬 관리자 관련 코드
 using UnityEngine.UI; // UI 관련 코드
 
@@ -44,7 +45,14 @@ public class UIManager : MonoBehaviour {
     public void SetActiveGameoverUI(bool active) {
         gameoverUI.SetActive(active);
     }
+    
+    public void showWhoisBest(string best)
+    {   
+        gameoverUI.GetComponentInChildren<Text>().text = "best player :\n"+best;
+        
+        
 
+    }
     // 게임 재시작
     public void GameRestart() {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);

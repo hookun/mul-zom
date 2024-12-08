@@ -32,6 +32,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
 
         // 접속을 시도 중임을 텍스트로 표시
         connectionInfoText.text = "마스터 서버에 접속중...";
+        userId.text = "Player" + Random.Range(0, 999).ToString("000"); //랜덤하게 방제목 설정
     }
 
     // 마스터 서버 접속 성공시 자동 실행
@@ -121,7 +122,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.IsOpen = true;
         roomOptions.IsVisible = true;
-        roomOptions.MaxPlayers = 20;
+        roomOptions.MaxPlayers = 4;
 
         PhotonNetwork.CreateRoom(_roomName, roomOptions, TypedLobby.Default);
     }

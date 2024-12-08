@@ -95,7 +95,14 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
         if (PhotonNetwork.IsMasterClient)
         {
             // 체력 추가
-            health += newHealth;
+            if (!(health >= 100))
+            {
+                health += newHealth;
+            }
+            else
+            {
+                health = 100;
+            }
             // 서버에서 클라이언트로 동기화
             photonView.RPC("ApplyUpdatedHealth", RpcTarget.Others, health, dead);
 

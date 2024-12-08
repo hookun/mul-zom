@@ -17,12 +17,13 @@ public class PlayerHealth : LivingEntity,IPunObservable {
 
     private PlayerMovement playerMovement; // 플레이어 움직임 컴포넌트
     private PlayerShooter playerShooter; // 플레이어 슈터 컴포넌트
+    private PlayerInput playerInput;
 
     private void Awake() {
         // 사용할 컴포넌트를 가져오기
         playerAnimator = GetComponent<Animator>();
         playerAudioPlayer = GetComponent<AudioSource>();
-
+        playerInput = GetComponent<PlayerInput>();
         playerMovement = GetComponent<PlayerMovement>();
         playerShooter = GetComponent<PlayerShooter>();
     }
@@ -63,6 +64,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
         healthText.text = health.ToString();
 
         // 플레이어 조작을 받는 컴포넌트들 활성화
+        playerInput.enabled = true;
         playerMovement.enabled = true;
         playerShooter.enabled = true;
     }
@@ -108,6 +110,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
         playerAnimator.SetTrigger("Die");
 
         // 플레이어 조작을 받는 컴포넌트들 비활성화
+        playerInput.enabled = false;
         playerMovement.enabled = false;
         playerShooter.enabled = false;
 

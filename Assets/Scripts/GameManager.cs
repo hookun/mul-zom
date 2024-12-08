@@ -5,6 +5,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static System.Net.Mime.MediaTypeNames;
+using Text = UnityEngine.UI.Text;
 
 // 점수와 게임 오버 여부, 게임 UI를 관리하는 게임 매니저
 public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
@@ -32,6 +34,11 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
     public InputField ChatInput;
     private int score = 0; // 현재 게임 점수
     private GameObject whoami;
+    public float timeleft;
+    public Text Timer;
+    public Text restartTimer;
+    public int restartTime;
+    private bool isTimerRunning = false;
     public bool isGameover { get; private set; } // 게임 오버 상태
 
     // 주기적으로 자동 실행되는, 동기화 메서드
@@ -40,34 +47,44 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         if (stream.IsWriting)
         {
             // 네트워크를 통해 score 값을 보내기
-            stream.SendNext(score);
+            stream.SendNext(score);      
         }
         else
         {
             // 리모트 오브젝트라면 읽기 부분이 실행됨         
-
             // 네트워크를 통해 score 값 받기
             score = (int) stream.ReceiveNext();
+            
             // 동기화하여 받은 점수를 UI로 표시
             UIManager.instance.UpdateScoreText(score);
         }
+        
     }
     
 
 
     private void Awake() {
         // 씬에 싱글톤 오브젝트가 된 다른 GameManager 오브젝트가 있다면
-        CustomSerializationHelper.RegisterCustomTypes();
+        PhotonNetwork.AutomaticallySyncScene = true;
+
+        isGameover = false;
         if (instance != this)
         {
             // 자신을 파괴
             Destroy(gameObject);
         }
+        timeleft = 15f;
+        print("웨이크");
     }
 
     // 게임 시작과 동시에 플레이어가 될 게임 오브젝트를 생성
-    IEnumerator Start() {
-        
+  
+
+    IEnumerator Start()
+    {   
+        PhotonNetwork.AutomaticallySyncScene = true;
+        UIManager.instance.SetActiveGameoverUI(false);
+        restartTime = 5;
         // 생성할 랜덤 위치 지정
         Vector3 randomSpawnPos = Random.insideUnitSphere * 5f;
         // 위치 y값은 0으로 변경
@@ -83,8 +100,8 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         FindWhoAmI();
 
         yield return new WaitForSeconds(1.0f);
-       
     }
+
     public void FindWhoAmI()//플레이어 이름 설정용
     {
         GameObject[] ppl = FindObjectsOfType<GameObject>();
@@ -109,16 +126,135 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         }
     }
 
-    // 게임 오버 처리
-    public void EndGame() {
-        // 게임 오버 상태를 참으로 변경
-        isGameover = true;
-        // 게임 오버 UI를 활성화
-        UIManager.instance.SetActiveGameoverUI(true);
+    private bool isEndGameCalled = false;
+     // 게임 오버 처리
+     
+    public string findBest()
+    {
+        string best = "";
+        int bestscore = 0;
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player"); 
+        foreach (GameObject playerObject in players)
+        {
+            if (playerObject.GetComponent<PlayerHealth>().kill >= bestscore)
+            {
+                bestscore= playerObject.GetComponent<PlayerHealth>().kill;
+                best = playerObject.GetComponent<PhotonView>().Owner.NickName;
+            }else if(playerObject.GetComponent<PlayerHealth>().kill == bestscore)
+            {
+                best = best + ", "+playerObject.GetComponent<PhotonView>().Owner.NickName;
+            }
+        }
+        best = best + " for " + bestscore + "kill";
+        return best;
+    }
+    IEnumerator TimerCoroutine()
+    {
+        while (restartTime > 0)
+        {
+            yield return new WaitForSeconds(1); // 1초 대기
+
+            restartTime -= 1;
+
+            photonView.RPC("RestartTime", RpcTarget.All, restartTime); // 1초마다 방 모두에게 전달
+        }
+
+        Debug.Log("타이머 종료");
     }
 
+    [PunRPC]
+    void RestartTime(int number)
+    {
+        restartTimer.text = number.ToString(); //타이머 갱신
+    }
+    private bool isSceneLoading = false;
     // 키보드 입력을 감지하고 룸을 나가게 함
-    private void Update() {
+    // GameManager 클래스 내부에 플래그 변수 추가
+    
+
+    [PunRPC]
+    public void EndGame()
+    {
+        if (isEndGameCalled)
+        {
+            return;
+        }
+
+        // 게임 오버 메시지 표시
+        UIManager.instance.showWhoisBest(findBest());
+        UIManager.instance.SetActiveGameoverUI(true);
+
+        // EndGame이 호출되었음을 표시
+        isEndGameCalled = true;
+
+        // 모든 클라이언트에 플래그 상태를 동기화
+        photonView.RPC("SyncEndGameFlag", RpcTarget.OthersBuffered, isEndGameCalled);
+    }
+
+    [PunRPC]
+    void SyncEndGameFlag(bool endGameFlag)
+    {
+        isEndGameCalled = endGameFlag;
+    }
+
+    // Update 메서드 수정
+
+
+    private void Update()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            if (Mathf.FloorToInt(timeleft) > 0)
+            {
+                timeleft -= Time.deltaTime;
+                photonView.RPC("ShowTimer", RpcTarget.All, timeleft);
+            }
+            else
+            {
+                if (!isEndGameCalled) // EndGame이 한 번만 호출되도록 방지
+                {
+                    photonView.RPC("EndGame", RpcTarget.All);
+                    isEndGameCalled = true;
+                    photonView.RPC("SyncEndGameFlag", RpcTarget.OthersBuffered, isEndGameCalled);
+                }
+
+                photonView.RPC("RestartTime", RpcTarget.All, restartTime);
+                if (!isTimerRunning) // 타이머가 이미 실행 중인지 확인
+                {
+                    StartCoroutine(TimerCoroutine());
+                    isTimerRunning = true;
+                }
+                if (restartTime == 0 && !isSceneLoading)
+                {
+                    photonView.RPC("Restart", RpcTarget.All);
+                }
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            PhotonNetwork.LeaveRoom();
+        }
+
+        if (ChatInput.isFocused)
+        {
+            if (!photonView.IsMine) return;
+            else if (photonView.IsMine)
+            {
+                whoami.GetComponent<PlayerMovement>().enabled = false;
+            }
+        }
+        else
+            whoami.GetComponent<PlayerMovement>().enabled = true;
+
+        if (Input.GetKeyDown(KeyCode.Return) && !ChatInput.isFocused)
+        {
+            Send();
+        }
+    
+    
+
+        
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             PhotonNetwork.LeaveRoom();
@@ -139,6 +275,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         {
             Send();
         }
+        
     }
     public void Send()
     {
@@ -175,11 +312,30 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         // 룸을 나가면 로비 씬으로 돌아감
         SceneManager.LoadScene("Lobby");
     }
+   
     [PunRPC]
     void LogMsg(string msg) //로그 메시지 Text UI에 텍스트를 누적시켜 표시
     {
         txtLogMsg.text = txtLogMsg.text + msg;
     }
-
+    [PunRPC]
+    void ShowTimer(float number)
+    {
+        Timer.text = "TIME LEFT : " + Mathf.FloorToInt(number).ToString();
+    }
+    [PunRPC]
+    void Restart()
+    {
+        Debug.Log("MasterClient is restarting the scene.");
+        
+        if (!isSceneLoading)
+        {
+            isSceneLoading = true; // 씬 로드 시작 플래그 설정
+           
+            PhotonNetwork.LoadLevel(SceneManager.GetActiveScene().name);
+            
+        }
+        
+    }
     
 }
