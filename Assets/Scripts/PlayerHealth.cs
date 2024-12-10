@@ -15,9 +15,9 @@ public class PlayerHealth : LivingEntity,IPunObservable {
     private AudioSource playerAudioPlayer; // 플레이어 소리 재생기
     private Animator playerAnimator; // 플레이어의 애니메이터
 
-    public PlayerMovement playerMovement; // 플레이어 움직임 컴포넌트
-    public PlayerShooter playerShooter; // 플레이어 슈터 컴포넌트
-    public PlayerInput playerInput;
+    private PlayerMovement playerMovement; // 플레이어 움직임 컴포넌트
+    private PlayerShooter playerShooter; // 플레이어 슈터 컴포넌트
+    private PlayerInput playerInput;
 
     private void Awake() {
         // 사용할 컴포넌트를 가져오기

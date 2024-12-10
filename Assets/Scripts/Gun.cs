@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 using Photon.Pun;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ public class Gun : MonoBehaviourPun, IPunObservable {
     public ParticleSystem muzzleFlashEffect; // 총구 화염 효과
     public ParticleSystem shellEjectEffect; // 탄피 배출 효과
 
-    private LineRenderer bulletLineRenderer; // 총알 궤적을 그리기 위한 렌더러
+    public LineRenderer[] bulletLineRenderer; // 총알 궤적을 그리기 위한 렌더러
 
     private AudioSource gunAudioPlayer; // 총 소리 재생기
     
@@ -30,6 +31,17 @@ public class Gun : MonoBehaviourPun, IPunObservable {
     public int magAmmo; // 현재 탄창에 남아있는 탄약
 
     private float lastFireTime; // 총을 마지막으로 발사한 시점
+
+    
+    public int magazinSize;
+
+    public bool isSingleOnly = false;
+    public bool isShotgun = false;
+    public int gunID;
+    public float reloadTime;
+   
+
+
 
     // 주기적으로 자동 실행되는, 동기화 메서드
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info) {
@@ -64,12 +76,26 @@ public class Gun : MonoBehaviourPun, IPunObservable {
     private void Awake() {
         // 사용할 컴포넌트들의 참조를 가져오기
         gunAudioPlayer = GetComponent<AudioSource>();
-        bulletLineRenderer = GetComponent<LineRenderer>();
-
-        // 사용할 점을 두개로 변경
-        bulletLineRenderer.positionCount = 2;
-        // 라인 렌더러를 비활성화
-        bulletLineRenderer.enabled = false;
+        reloadTime = gunData.reloadTime;
+        if (isShotgun)
+        {
+            gunID = 3;
+            fireDistance = 5f;
+            for (int i = 0; i < bulletLineRenderer.Length; i++)
+            {              
+                bulletLineRenderer[i].enabled = false; // 초기에는 비활성화 상태
+            }
+        }
+        else if (!isShotgun)
+        {
+            bulletLineRenderer = new LineRenderer[1];
+            bulletLineRenderer[0] = GetComponent<LineRenderer>();
+            bulletLineRenderer[0].positionCount = 2;
+            bulletLineRenderer[0].enabled = false;
+            if (isSingleOnly)
+                gunID = 1;
+            else gunID = 0;
+        }
     }
 
 
@@ -83,6 +109,7 @@ public class Gun : MonoBehaviourPun, IPunObservable {
         state = State.Ready;
         // 마지막으로 총을 쏜 시점을 초기화
         lastFireTime = 0;
+        
     }
 
 
@@ -112,60 +139,77 @@ public class Gun : MonoBehaviourPun, IPunObservable {
             state = State.Empty;
         }
     }
-
+    public void Single_Fire()//단발 발사
+    {
+        //현재 발사가 가능한 상태 && 총 발사 간격의 시간이 지났는지
+        if (state == State.Ready && Time.time >= lastFireTime +
+            gunData.timeBetFire)
+        {
+            lastFireTime = Time.time;
+            Shot();
+        }
+    }
     // 호스트에서 실행되는, 실제 발사 처리
     [PunRPC]
     private void ShotProcessOnServer() {
-        // 레이캐스트에 의한 충돌 정보를 저장하는 컨테이너
-        RaycastHit hit;
-        // 총알이 맞은 곳을 저장할 변수
-        Vector3 hitPosition = Vector3.zero;
+        int rayCount = bulletLineRenderer.Length; // 발사할 레이의 수
+        float angleSpread = 10f; // 레이의 각도 간격
 
-        // 레이캐스트(시작지점, 방향, 충돌 정보 컨테이너, 사정거리)
-        if (Physics.Raycast(fireTransform.position,
-            fireTransform.forward, out hit, fireDistance))
+        for (int i = 0; i < rayCount; i++)
         {
-            // 레이가 어떤 물체와 충돌한 경우
+            float angle = -angleSpread * (rayCount - 1) / 2 + angleSpread * i;
+            Vector3 rayDirection = Quaternion.Euler(0, angle, 0) * fireTransform.forward;
+            // 레이캐스트에 의한 충돌 정보를 저장하는 컨테이너
+            RaycastHit hit;
+            // 총알이 맞은 곳을 저장할 변수
+            Vector3 hitPosition = Vector3.zero;
 
-            // 충돌한 상대방으로부터 IDamageable 오브젝트를 가져오기 시도
-            IDamageable target =
-                hit.collider.GetComponent<IDamageable>();
-
-            // 상대방으로 부터 IDamageable 오브젝트를 가져오는데 성공했다면
-            if (target != null)
+            // 레이캐스트(시작지점, 방향, 충돌 정보 컨테이너, 사정거리)
+            if (Physics.Raycast(fireTransform.position,
+                rayDirection, out hit, fireDistance))
             {
-                // 상대방의 OnDamage 함수를 실행시켜서 상대방에게 데미지 주기
-                target.OnDamage(gunData.damage, hit.point, hit.normal,photonView.ViewID);
-                print("aa"+photonView.Owner.NickName);//맞은 대상확인
+                // 레이가 어떤 물체와 충돌한 경우
+
+                // 충돌한 상대방으로부터 IDamageable 오브젝트를 가져오기 시도
+                IDamageable target =
+                    hit.collider.GetComponent<IDamageable>();
+
+                // 상대방으로 부터 IDamageable 오브젝트를 가져오는데 성공했다면
+                if (target != null)
+                {
+                    // 상대방의 OnDamage 함수를 실행시켜서 상대방에게 데미지 주기
+                    target.OnDamage(gunData.damage, hit.point, hit.normal, photonView.ViewID);
+                    print("aa" + photonView.Owner.NickName);//맞은 대상확인
+                }
+
+                // 레이가 충돌한 위치 저장
+                hitPosition = hit.point;
+            }
+            else
+            {
+                // 레이가 다른 물체와 충돌하지 않았다면
+                // 총알이 최대 사정거리까지 날아갔을때의 위치를 충돌 위치로 사용
+                hitPosition = fireTransform.position +
+                              rayDirection * fireDistance;
             }
 
-            // 레이가 충돌한 위치 저장
-            hitPosition = hit.point;
+            // 발사 이펙트 재생, 이펙트 재생은 모든 클라이언트들에서 실행
+            photonView.RPC("ShotEffectProcessOnClients", RpcTarget.All, hitPosition, photonView.ViewID,i);
         }
-        else
-        {
-            // 레이가 다른 물체와 충돌하지 않았다면
-            // 총알이 최대 사정거리까지 날아갔을때의 위치를 충돌 위치로 사용
-            hitPosition = fireTransform.position +
-                          fireTransform.forward * fireDistance;
-        }
-
-        // 발사 이펙트 재생, 이펙트 재생은 모든 클라이언트들에서 실행
-        photonView.RPC("ShotEffectProcessOnClients", RpcTarget.All, hitPosition, photonView.ViewID);
     }
 
     // 이펙트 재생 코루틴을 랩핑하는 메서드
     [PunRPC]
-    private void ShotEffectProcessOnClients(Vector3 hitPosition, int shooterID) {
+    private void ShotEffectProcessOnClients(Vector3 hitPosition, int shooterID,int index) {
         PhotonView shooterPhotonView = PhotonView.Find(shooterID); 
         if (shooterPhotonView != null) { 
             Debug.Log("Shot fired by: " + shooterPhotonView.Owner.NickName); //발사한 사람 확인
         }
-        StartCoroutine(ShotEffect(hitPosition));
+        StartCoroutine(ShotEffect(hitPosition, fireTransform.position, index));
     }
 
     // 발사 이펙트와 소리를 재생하고 총알 궤적을 그린다
-    private IEnumerator ShotEffect(Vector3 hitPosition) {
+    private IEnumerator ShotEffect(Vector3 hitPosition, Vector3 firePosition, int index) {
         // 총구 화염 효과 재생
         muzzleFlashEffect.Play();
         // 탄피 배출 효과 재생
@@ -173,19 +217,20 @@ public class Gun : MonoBehaviourPun, IPunObservable {
 
         // 총격 소리 재생
         gunAudioPlayer.PlayOneShot(gunData.shotClip);
+        LineRenderer lineRenderer = bulletLineRenderer[index];
 
-        // 선의 시작점은 총구의 위치
-        bulletLineRenderer.SetPosition(0, fireTransform.position);
-        // 선의 끝점은 입력으로 들어온 충돌 위치
-        bulletLineRenderer.SetPosition(1, hitPosition);
-        // 라인 렌더러를 활성화하여 총알 궤적을 그린다
-        bulletLineRenderer.enabled = true;
+        // 라인 렌더러의 시작점과 끝점 설정
+        lineRenderer.SetPosition(0, firePosition);
+        lineRenderer.SetPosition(1, hitPosition);
+        lineRenderer.enabled = true;
+
+        
 
         // 0.03초 동안 잠시 처리를 대기
         yield return new WaitForSeconds(0.03f);
 
         // 라인 렌더러를 비활성화하여 총알 궤적을 지운다
-        bulletLineRenderer.enabled = false;
+        lineRenderer.enabled = false;
     }
 
     // 재장전 시도

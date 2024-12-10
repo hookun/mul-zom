@@ -1,21 +1,36 @@
 ﻿using Photon.Pun;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 주어진 Gun 오브젝트를 쏘거나 재장전
 // 알맞은 애니메이션을 재생하고 IK를 사용해 캐릭터 양손이 총에 위치하도록 조정
 public class PlayerShooter : MonoBehaviourPun {
+
+    public List<Gun> gunList = new List<Gun>();//총기
+    public List<Transform> lefthandlist = new List<Transform>();//왼팔
+    public List<Transform> righthandlist = new List<Transform>();//오른팔
+
     public Gun gun; // 사용할 총
     public Transform gunPivot; // 총 배치의 기준점
     public Transform leftHandMount; // 총의 왼쪽 손잡이, 왼손이 위치할 지점
     public Transform rightHandMount; // 총의 오른쪽 손잡이, 오른손이 위치할 지점
-    
+    public Gun preGun;
     private PlayerInput playerInput; // 플레이어의 입력
     private Animator playerAnimator; // 애니메이터 컴포넌트
+
+    private Dictionary<int, (int magAmmo, int ammoRemain)> ammoData; // 무기의 탄약 정보를 저장하는 Dictionary
 
     private void Start() {
         // 사용할 컴포넌트들을 가져오기
         playerInput = GetComponent<PlayerInput>();
         playerAnimator = GetComponent<Animator>();
+
+        ammoData = new Dictionary<int, (int, int)>();
+
+        foreach (var g in gunList)
+        {
+            ammoData[g.gunID] = (g.magAmmo, g.ammoRemain);
+        }
     }
 
     private void OnEnable() {
@@ -36,10 +51,46 @@ public class PlayerShooter : MonoBehaviourPun {
         }
 
         // 입력을 감지하고 총 발사하거나 재장전
-        if (playerInput.fire)
+        
+        if (playerInput.weapon1)
         {
-            // 발사 입력 감지시 총 발사
-            gun.Fire();
+            SwitchWeapon(0);
+        }
+        else if (playerInput.weapon2)
+        {
+            SwitchWeapon(1);
+        }
+        else if (playerInput.weapon3)
+        {
+            SwitchWeapon(2);
+        }
+        if (!gun.isSingleOnly)
+        {
+            if (playerInput.fire)
+            {
+                gun.Fire();
+            }
+            else if (playerInput.reload)
+            {
+                if (gun.Reload())
+                {
+                    playerAnimator.SetTrigger("Reload");
+                }
+            }
+        }
+        else if (gun.isSingleOnly)
+        {
+            if (playerInput.singlefire)
+            {
+                gun.Fire();
+            }
+            else if (playerInput.reload)
+            {
+                if (gun.Reload())
+                {
+                    playerAnimator.SetTrigger("Reload");
+                }
+            }
         }
         else if (playerInput.reload)
         {
@@ -54,7 +105,31 @@ public class PlayerShooter : MonoBehaviourPun {
         // 남은 탄약 UI를 갱신
         UpdateUI();
     }
+    private void SwitchWeapon(int index)
+    {
+        if (index < 0 || index >= gunList.Count) return;
 
+        if (gun != null)
+        {
+            // 현재 무기의 탄약 정보 저장
+            ammoData[gun.gunID] = (gun.magAmmo, gun.ammoRemain);
+            gun.gameObject.SetActive(false);
+        }
+
+        gun = gunList[index];
+        gun.gameObject.SetActive(true);
+
+        // 무기의 탄약 정보 복원
+        if (ammoData.TryGetValue(gun.gunID, out var ammoInfo))
+        {
+            gun.magAmmo = ammoInfo.magAmmo;
+            gun.ammoRemain = ammoInfo.ammoRemain;
+        }
+
+        leftHandMount = lefthandlist[index];
+        rightHandMount = righthandlist[index];
+        UpdateUI();
+    }
     // 탄약 UI 갱신
     private void UpdateUI() {
         if (gun != null && UIManager.instance != null)
