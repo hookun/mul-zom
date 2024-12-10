@@ -43,44 +43,44 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
             photonView.RPC("ApplyUpdatedHealth", RpcTarget.Others, health, dead);
 
             // 다른 클라이언트들도 OnDamage를 실행하도록 함
-            photonView.RPC("OnDamage", RpcTarget.Others, damage, hitPoint, hitNormal,shooterID);
+            photonView.RPC("OnDamage", RpcTarget.Others, damage, hitPoint, hitNormal,shooterID);//shooterID는 Gun스크립트에서 넘겨줌
             
         }
 
         // 체력이 0 이하 && 아직 죽지 않았다면 사망 처리 실행
         if (health <= 0 && !dead)
         {
-            PhotonView shooterPhotonView = PhotonView.Find(shooterID);
+            PhotonView shooterPhotonView = PhotonView.Find(shooterID);//쏜사람 아이디값으로 포톤뷰 검색
             if (shooterPhotonView != null)
             {
                 
-                saveKillcount(shooterID-1);
+                saveKillcount(shooterID-1);//총의 photonView아이디가 캐릭터 photonView아이디 +1이기 때문에 캐릭터에 킬수 적용위해 -1
                 
                 }
                 Die();
         }
     }
 
-    void saveKillcount(int shooterID)
+    void saveKillcount(int shooterID) //킬카운트 적용
     {
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
         foreach(GameObject player in players)
         {   
             int phothon_id = player.GetComponent<PhotonView>().ViewID;
-            if(phothon_id == shooterID)
+            if(phothon_id == shooterID)//모든 플레이어 중 shooter아이디와 photonView 아이디가 같은사람에게
             {
-                player.GetComponent<LivingEntity>().incKillcount(shooterID);
+                player.GetComponent<LivingEntity>().incKillcount(shooterID);//킬카운트 증가 실행
                 break;
             }
         }
     }
-    void incKillcount(int shooterID)
+    void incKillcount(int shooterID) //킬카운트 증가
     {
         PhotonView shooterPhotonView = PhotonView.Find(shooterID);
         ++kill;
-        textKillCounter.text = kill.ToString();
-        ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable { { "score", kill } };
-        PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
+        textKillCounter.text = kill.ToString();//텍스트 적용
+        ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable { { "score", kill } }; //동기화 위해해시테이블로 점수 값 저장
+        PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);//점수 동기화
     }
     // 체력을 회복하는 기능
     [PunRPC]
@@ -95,7 +95,7 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
         if (PhotonNetwork.IsMasterClient)
         {
             // 체력 추가
-            if (!(health >= 100))
+            if (!(health >= 100))//100이상으로 회복되는거 방지
             {
                 health += newHealth;
             }

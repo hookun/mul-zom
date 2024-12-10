@@ -136,7 +136,7 @@ public class Gun : MonoBehaviourPun, IPunObservable {
             {
                 // 상대방의 OnDamage 함수를 실행시켜서 상대방에게 데미지 주기
                 target.OnDamage(gunData.damage, hit.point, hit.normal,photonView.ViewID);
-                print("aa"+photonView.Owner.NickName);
+                print("aa"+photonView.Owner.NickName);//맞은 대상확인
             }
 
             // 레이가 충돌한 위치 저장
@@ -159,7 +159,7 @@ public class Gun : MonoBehaviourPun, IPunObservable {
     private void ShotEffectProcessOnClients(Vector3 hitPosition, int shooterID) {
         PhotonView shooterPhotonView = PhotonView.Find(shooterID); 
         if (shooterPhotonView != null) { 
-            Debug.Log("Shot fired by: " + shooterPhotonView.Owner.NickName); 
+            Debug.Log("Shot fired by: " + shooterPhotonView.Owner.NickName); //발사한 사람 확인
         }
         StartCoroutine(ShotEffect(hitPosition));
     }

@@ -45,10 +45,26 @@ public class PlayerMovement : MonoBehaviourPun {
 
     // 입력값에 따라 캐릭터를 좌우로 회전
     private void Rotate() {
-        // 상대적으로 회전할 수치 계산
-        float turn = playerInput.rotate * rotateSpeed * Time.deltaTime;
-        // 리지드바디를 통해 게임 오브젝트 회전 변경
-        playerRigidbody.rotation =
-            playerRigidbody.rotation * Quaternion.Euler(0, turn, 0f);
+        Vector3 mouseScreenPosition = Input.mousePosition;
+
+        // 메인 카메라를 기준으로 마우스 위치를 월드 좌표로 변환
+        Ray ray = Camera.main.ScreenPointToRay(mouseScreenPosition);
+        Plane plane = new Plane(Vector3.up, transform.position);
+
+        if (plane.Raycast(ray, out float distance))
+        {
+            // 월드 좌표로 변환된 마우스 위치를 얻음
+            Vector3 targetPoint = ray.GetPoint(distance);
+
+            // 타겟 방향 계산
+            Vector3 direction = (targetPoint - transform.position).normalized;
+            direction.y = 0; // y축 방향 제거 (평면상에서만 회전하도록)
+
+            // 회전할 각도 계산
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+            // 리지드바디를 사용하여 회전
+            playerRigidbody.rotation = Quaternion.Slerp(playerRigidbody.rotation, targetRotation, rotateSpeed * Time.deltaTime);
+        }
     }
 }

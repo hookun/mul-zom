@@ -828,6 +828,9 @@ MonoBehaviour:
   deathClip: {fileID: 8300000, guid: 4265c953ea2b74edabac0c972182dcba, type: 3}
   hitClip: {fileID: 8300000, guid: cbfb3a79860ac42c89b09fc131ef4b61, type: 3}
   itemPickupClip: {fileID: 8300000, guid: 519ad2e4de69341948a938bf2a31e33b, type: 3}
+  playerMovement: {fileID: 0}
+  playerShooter: {fileID: 0}
+  playerInput: {fileID: 0}
 --- !u!114 &2680204045310849022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3001,6 +3004,16 @@ PrefabInstance:
         type: 3}
       propertyPath: sceneViewId
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5734669343493535598, guid: 13259943c4d634186ac994d570bb3253,
+        type: 3}
+      propertyPath: m_audioClip
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5734669343493535598, guid: 13259943c4d634186ac994d570bb3253,
+        type: 3}
+      propertyPath: m_PlayOnAwake
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 13259943c4d634186ac994d570bb3253, type: 3}
