@@ -1,5 +1,6 @@
 ﻿using Photon.Pun;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 // 주어진 Gun 오브젝트를 쏘거나 재장전
@@ -9,12 +10,12 @@ public class PlayerShooter : MonoBehaviourPun {
     public List<Gun> gunList = new List<Gun>();//총기
     public List<Transform> lefthandlist = new List<Transform>();//왼팔
     public List<Transform> righthandlist = new List<Transform>();//오른팔
-
+    public int gunNumber=0; // 중도 참여 시 총기 종류 동기화용
     public Gun gun; // 사용할 총
     public Transform gunPivot; // 총 배치의 기준점
     public Transform leftHandMount; // 총의 왼쪽 손잡이, 왼손이 위치할 지점
     public Transform rightHandMount; // 총의 오른쪽 손잡이, 오른손이 위치할 지점
-    public Gun preGun;
+    public Gun preGun;//이전 총
     private PlayerInput playerInput; // 플레이어의 입력
     private Animator playerAnimator; // 애니메이터 컴포넌트
 
@@ -27,15 +28,45 @@ public class PlayerShooter : MonoBehaviourPun {
 
         ammoData = new Dictionary<int, (int, int)>();
 
+        
+        gun = gunList[0];
+        
+
+    }
+    private void Awake() //start에서 실행시 동기화 때 문제생겨서 Awake에서 생성
+    {
+        ammoData = new Dictionary<int, (int, int)>();
         foreach (var g in gunList)
         {
             ammoData[g.gunID] = (g.magAmmo, g.ammoRemain);
         }
     }
 
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        // 로컬 오브젝트라면 쓰기 부분이 실행됨
+        if (stream.IsWriting)
+        {
+            // 네트워크를 통해 score 값을 보내기
+            stream.SendNext(gunNumber);
+        }
+        else
+        {
+            // 리모트 오브젝트라면 읽기 부분이 실행됨         
+            
+            // 네트워크를 통해 값 받기
+            gunNumber = (int)stream.ReceiveNext();
+            
+            SwitchWeapon(gunNumber);
+            photonView.RPC("SwitchWeapon", RpcTarget.OthersBuffered, gunNumber);
+
+        }
+    }
     private void OnEnable() {
         // 슈터가 활성화될 때 총도 함께 활성화
         gun.gameObject.SetActive(true);
+        
+        
     }
 
     private void OnDisable() {
@@ -54,15 +85,21 @@ public class PlayerShooter : MonoBehaviourPun {
         
         if (playerInput.weapon1)
         {
-            SwitchWeapon(0);
+            gunNumber = 0;
+            SwitchWeapon(gunNumber);
+            photonView.RPC("SwitchWeapon", RpcTarget.OthersBuffered,gunNumber);
         }
         else if (playerInput.weapon2)
         {
-            SwitchWeapon(1);
+            gunNumber = 1;
+            SwitchWeapon(gunNumber);
+            photonView.RPC("SwitchWeapon", RpcTarget.OthersBuffered, gunNumber);
         }
         else if (playerInput.weapon3)
         {
-            SwitchWeapon(2);
+            gunNumber = 2;
+            SwitchWeapon(gunNumber);
+            photonView.RPC("SwitchWeapon", RpcTarget.OthersBuffered, gunNumber);
         }
         if (!gun.isSingleOnly)
         {
@@ -105,16 +142,20 @@ public class PlayerShooter : MonoBehaviourPun {
         // 남은 탄약 UI를 갱신
         UpdateUI();
     }
+    [PunRPC]
     private void SwitchWeapon(int index)
     {
         if (index < 0 || index >= gunList.Count) return;
 
         if (gun != null)
         {
+
+
             // 현재 무기의 탄약 정보 저장
             ammoData[gun.gunID] = (gun.magAmmo, gun.ammoRemain);
             gun.gameObject.SetActive(false);
         }
+        
 
         gun = gunList[index];
         gun.gameObject.SetActive(true);

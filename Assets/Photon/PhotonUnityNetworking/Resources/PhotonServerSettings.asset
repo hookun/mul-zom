@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: PhotonServerSettings
   m_EditorClassIdentifier: 
   AppSettings:
-    AppIdRealtime: e641b90b-b337-4791-a80a-2e1369bcdef4
+    AppIdRealtime: c3db6867-70fc-4bfd-aaea-fd8373701122
     AppIdFusion: 
     AppIdChat: 
     AppIdVoice: 
     AppVersion: 
     UseNameServer: 1
-    FixedRegion: hk
+    FixedRegion: jp
     Server: 
     Port: 0
     ProxyServer: 
@@ -58,6 +58,8 @@ MonoBehaviour:
   - ResetGameoverState
   - fuckyouDie
   - SyncEndGameFlag
+  - SwitchWeapon
+  - SwitchOnServer
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

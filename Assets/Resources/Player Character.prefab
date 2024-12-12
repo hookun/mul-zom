@@ -885,6 +885,7 @@ MonoBehaviour:
   - {fileID: 2645250977411768660}
   - {fileID: 1877513789143901593}
   - {fileID: 1280469029323632464}
+  gunNumber: 0
   gun: {fileID: 2680132470206347466}
   gunPivot: {fileID: 2642475367299946226}
   leftHandMount: {fileID: 2642363673042770050}
@@ -3076,7 +3077,8 @@ MonoBehaviour:
   Synchronization: 3
   OwnershipTransfer: 0
   observableSearch: 2
-  ObservedComponents: []
+  ObservedComponents:
+  - {fileID: 5482415801206079740}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -3353,7 +3355,7 @@ PrefabInstance:
     - target: {fileID: 5672271677452297312, guid: 13259943c4d634186ac994d570bb3253,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5673827465432582322, guid: 13259943c4d634186ac994d570bb3253,
         type: 3}

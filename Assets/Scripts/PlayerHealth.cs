@@ -39,7 +39,7 @@ public class PlayerHealth : LivingEntity,IPunObservable {
         else
         {
             // 리모트 오브젝트라면 읽기 부분이 실행됨         
-
+            
             // 네트워크를 통해 score 값 받기
             health = (float)stream.ReceiveNext();
             kill = (int)stream.ReceiveNext();//kill추가

@@ -75,7 +75,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             // 자신을 파괴
             Destroy(gameObject);
         }
-        timeleft = 15f;
+        timeleft = 60f;
         restartTime = 5;
         print("웨이크");
     }
@@ -157,6 +157,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             else
             {
                 best = "Everybody is pacifist";
+                return best;
             }
         }
         best = best + " for " + bestscore + "kill";
@@ -199,7 +200,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         isEndGameCalled = true;
         
         whoami.GetComponent<PlayerInput>().enabled = false;
-        print("십라");
+       
         // 모든 클라이언트에 플래그 상태를 동기화
         photonView.RPC("SyncEndGameFlag", RpcTarget.OthersBuffered, isEndGameCalled);
     }
