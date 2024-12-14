@@ -9,7 +9,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Text = UnityEngine.UI.Text;
 
 // 점수와 게임 오버 여부, 게임 UI를 관리하는 게임 매니저
-public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
+public class GameManager : MonoBehaviourPunCallbacks{
     // 외부에서 싱글톤 오브젝트를 가져올때 사용할 프로퍼티
     public static GameManager instance
     {
@@ -42,7 +42,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
     public bool isGameover { get; private set; } // 게임 오버 상태
 
     // 주기적으로 자동 실행되는, 동기화 메서드
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info) {
+    /*public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info) {
         // 로컬 오브젝트라면 쓰기 부분이 실행됨
         if (stream.IsWriting)
         {
@@ -60,8 +60,8 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             restartTime = (int) stream.ReceiveNext();
            
         }
-        
-    }
+        //필요할 줄 알았는데 필요없었음 아니었고/ 내가 옳았어
+    }*/
     
 
 
@@ -75,8 +75,8 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             // 자신을 파괴
             Destroy(gameObject);
         }
-        timeleft = 60f;
-        restartTime = 5;
+        timeleft = 30f;
+        restartTime = 10;
         print("웨이크");
     }
 
@@ -154,7 +154,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
             {
                 best = best + ", "+playerObject.GetComponent<PhotonView>().Owner.NickName;
             }
-            else
+            else if(bestscore==0)
             {
                 best = "Everybody is pacifist";
                 return best;
@@ -216,9 +216,10 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
    
     private void Update()
     {
-
+        
         if (PhotonNetwork.IsMasterClient)
         {
+            photonView.RPC("SyncEndGameFlag", RpcTarget.OthersBuffered, isEndGameCalled);
             if (Mathf.FloorToInt(timeleft) > 0) //타이머 남은시간 체크
             {
                 timeleft -= Time.deltaTime;
@@ -232,7 +233,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
 
                     photonView.RPC("EndGame", RpcTarget.All);
                     isEndGameCalled = true;
-                    photonView.RPC("SyncEndGameFlag", RpcTarget.OthersBuffered, isEndGameCalled);
+                    
                 }
 
                 photonView.RPC("RestartTime", RpcTarget.All, restartTime);
@@ -250,7 +251,7 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
         else if (!PhotonNetwork.IsMasterClient) //재시작 타이머 작동시 접속할때
         {
             
-            if (Mathf.FloorToInt(timeleft) == 0) //타이머 남은시간 체크
+            if (isEndGameCalled) //타이머 남은시간 체크
             {
                 UIManager.instance.showWhoisBest(findBest());
                 UIManager.instance.SetActiveGameoverUI(true);
@@ -349,4 +350,6 @@ public class GameManager : MonoBehaviourPunCallbacks, IPunObservable {
 
         }
     }
+
+    
 }

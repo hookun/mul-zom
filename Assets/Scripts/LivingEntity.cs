@@ -54,7 +54,7 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
             if (shooterPhotonView != null)
             {
                 
-                saveKillcount(shooterID-1);//총의 photonView아이디가 캐릭터 photonView아이디 +1이기 때문에 캐릭터에 킬수 적용위해 -1
+                saveKillcount(shooterID);
                 
                 }
                 Die();
@@ -79,7 +79,8 @@ public class LivingEntity : MonoBehaviourPun, IDamageable {
         PhotonView shooterPhotonView = PhotonView.Find(shooterID);
         ++kill;
         textKillCounter.text = kill.ToString();//텍스트 적용
-        ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable { { "score", kill } }; //동기화 위해해시테이블로 점수 값 저장
+        //동기화 위해해시테이블로 점수 값 저장
+        ExitGames.Client.Photon.Hashtable playerProperties = new ExitGames.Client.Photon.Hashtable { { "score", kill } }; 
         PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);//점수 동기화
     }
     // 체력을 회복하는 기능

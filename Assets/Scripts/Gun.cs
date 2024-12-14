@@ -177,8 +177,9 @@ public class Gun : MonoBehaviourPun, IPunObservable {
                 // 상대방으로 부터 IDamageable 오브젝트를 가져오는데 성공했다면
                 if (target != null)
                 {
+                    PhotonView parentPhotonView = transform.root.GetComponent<PhotonView>();
                     // 상대방의 OnDamage 함수를 실행시켜서 상대방에게 데미지 주기
-                    target.OnDamage(gunData.damage, hit.point, hit.normal, photonView.ViewID);
+                    target.OnDamage(gunData.damage, hit.point, hit.normal, parentPhotonView.ViewID);
                     print("aa" + photonView.Owner.NickName);//맞은 대상확인
                 }
 

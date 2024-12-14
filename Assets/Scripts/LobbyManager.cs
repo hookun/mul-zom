@@ -36,7 +36,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks {
 
         // 접속을 시도 중임을 텍스트로 표시
         connectionInfoText.text = "마스터 서버에 접속중...";
-        userId.text = "Player" + Random.Range(0, 999).ToString("000"); //랜덤하게 방제목 설정
+        userId.text = "Player" + Random.Range(0, 999).ToString("000"); //랜덤하게 이름 설정
     }
 
     // 마스터 서버 접속 성공시 자동 실행
